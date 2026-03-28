@@ -10,9 +10,7 @@
 
 <h2 align="center">🎬 Preview</h2>
 
-<p align="center">
-  <code>Example capture from voice input: “I have an idea: an app that shows which cafés are quiet right now.”</code>
-</p>
+> Example capture from voice input: `“I have an idea: an app that shows which cafés are quiet right now.”`
 
 <p align="center">
   <img src="assets/demo-capture.gif" alt="Demo capture" width="324" />
