@@ -35,6 +35,62 @@ class RecordingService : Service() {
         fun start(context: Context) {
             context.startForegroundService(Intent(context, RecordingService::class.java))
         }
+
+        fun showIdleNotification(context: Context) {
+            val nm = context.getSystemService(NotificationManager::class.java)
+            nm.notify(NOTIFICATION_ID, buildNotification(context, recording = false))
+        }
+
+        private fun buildNotification(context: Context, recording: Boolean): Notification {
+            val settings = NotificationPrefs(context).get()
+
+            val openAppIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val openAppPi = PendingIntent.getActivity(
+                context,
+                0,
+                openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+
+            val actionIntent = Intent(context, RecordingService::class.java).apply {
+                action = if (recording) ACTION_STOP_RECORDING else ACTION_START_RECORDING
+            }
+            val actionPi = if (recording) {
+                PendingIntent.getService(
+                    context,
+                    1,
+                    actionIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            } else {
+                PendingIntent.getForegroundService(
+                    context,
+                    1,
+                    actionIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            }
+
+            val actionIcon = if (recording) {
+                android.R.drawable.ic_media_pause
+            } else {
+                NotificationPrefs.getIconRes(settings.iconKey)
+            }
+            val actionTitle = if (recording) settings.stopLabel else settings.recordLabel
+            val contentText = if (recording) settings.recordingText else settings.idleText
+
+            return NotificationCompat.Builder(context, CHANNEL_ID)
+                .setContentTitle(settings.title)
+                .setContentText(contentText)
+                .setSmallIcon(NotificationPrefs.getIconRes(settings.iconKey))
+                .setContentIntent(openAppPi)
+                .setOngoing(true)
+                .setShowWhen(false)
+                .setWhen(0L)
+                .addAction(actionIcon, actionTitle, actionPi)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .build()
+        }
     }
 
     private var mediaRecorder: MediaRecorder? = null
@@ -61,12 +117,16 @@ class RecordingService : Service() {
         when (intent?.action) {
             ACTION_START_RECORDING -> startRecording()
             ACTION_STOP_RECORDING -> stopRecording()
-            else -> startForegroundWithType(buildNotification(recording = false))
+            else -> startForegroundIdle(buildNotification(recording = false))
         }
         return START_STICKY
     }
 
-    private fun startForegroundWithType(notification: Notification) {
+    private fun startForegroundIdle(notification: Notification) {
+        startForeground(NOTIFICATION_ID, notification)
+    }
+
+    private fun startForegroundForRecording(notification: Notification) {
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
         } else {
@@ -78,6 +138,7 @@ class RecordingService : Service() {
         val filePath = repository.generateFilePath()
         currentFilePath = filePath
 
+        startForegroundForRecording(buildNotification(recording = true))
         startPcmRecording(filePath)
         isRecording = true
         updateNotification(recording = true)
@@ -268,42 +329,7 @@ class RecordingService : Service() {
     }
 
     private fun buildNotification(recording: Boolean): Notification {
-        val settings = notificationPrefs.get()
-
-        val openAppIntent = packageManager.getLaunchIntentForPackage(packageName)
-        val openAppPi = PendingIntent.getActivity(
-            this, 0, openAppIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val actionIntent = Intent(this, RecordingService::class.java).apply {
-            action = if (recording) ACTION_STOP_RECORDING else ACTION_START_RECORDING
-        }
-        val actionPi = PendingIntent.getService(
-            this, 1, actionIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val actionIcon = if (recording) {
-            android.R.drawable.ic_media_pause
-        } else {
-            NotificationPrefs.getIconRes(settings.iconKey)
-        }
-        val actionTitle = if (recording) settings.stopLabel else settings.recordLabel
-        val contentText = if (recording) settings.recordingText else settings.idleText
-
-
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(settings.title)
-            .setContentText(contentText)
-            .setSmallIcon(NotificationPrefs.getIconRes(settings.iconKey))
-            .setContentIntent(openAppPi)
-            .setOngoing(true)
-            .setShowWhen(false)
-            .setWhen(0L)
-            .addAction(actionIcon, actionTitle, actionPi)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
+        return buildNotification(this, recording)
     }
 
     override fun onDestroy() {
