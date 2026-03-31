@@ -3,7 +3,15 @@
 </p>
 
 <p align="center">
-  <code>🧩 Built with Kotlin + Jetpack Compose, styled with Material 3, for fast capture of ideas and thoughts without unlocking the device</code>
+  <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge" alt="Language: Kotlin" />
+  &nbsp;
+  <img src="https://img.shields.io/badge/Framework-Jetpack%20Compose-4285F4?style=for-the-badge" alt="Framework: Jetpack Compose" />
+  &nbsp;
+  <img src="https://img.shields.io/badge/Design-Material%203-009688?style=for-the-badge" alt="Design: Material 3" />
+  <br />
+  <img src="https://img.shields.io/badge/STT-Whisper%20Base%20q5_1-FF6F00?style=for-the-badge" alt="STT: Whisper Base q5_1" />
+  &nbsp;
+  <img src="https://img.shields.io/badge/Connectivity-Fully%20Offline-2E7D32?style=for-the-badge" alt="Connectivity: Fully Offline" />
 </p>
 
 <hr />
