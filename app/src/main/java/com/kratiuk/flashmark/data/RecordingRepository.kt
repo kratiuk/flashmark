@@ -42,6 +42,10 @@ class RecordingRepository(private val context: Context) {
             ?: emptyList()
     }
 
+    fun getIncompleteCount(): Int {
+        return getRecordings().count { !it.isCompleted }
+    }
+
     fun deleteRecording(recording: Recording) {
         File(recording.filePath).delete()
         val base = File(recording.filePath).nameWithoutExtension

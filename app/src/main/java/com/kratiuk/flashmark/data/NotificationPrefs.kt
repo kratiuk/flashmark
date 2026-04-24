@@ -10,6 +10,7 @@ data class NotificationSettings(
     val recordLabel: String,
     val stopLabel: String,
     val iconKey: String,
+    val showIncompleteCount: Boolean,
 )
 
 class NotificationPrefs(private val context: Context) {
@@ -28,6 +29,7 @@ class NotificationPrefs(private val context: Context) {
         stopLabel = prefs.getString("stop_label", context.getString(R.string.notif_default_stop_label))
             ?: context.getString(R.string.notif_default_stop_label),
         iconKey = prefs.getString("icon_key", "default") ?: "default",
+        showIncompleteCount = prefs.getBoolean("show_incomplete_count", false),
     )
 
     fun save(settings: NotificationSettings) {
@@ -38,6 +40,7 @@ class NotificationPrefs(private val context: Context) {
             .putString("record_label", settings.recordLabel)
             .putString("stop_label", settings.stopLabel)
             .putString("icon_key", settings.iconKey)
+            .putBoolean("show_incomplete_count", settings.showIncompleteCount)
             .apply()
     }
 

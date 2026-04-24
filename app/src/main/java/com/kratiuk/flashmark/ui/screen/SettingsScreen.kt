@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -187,6 +188,21 @@ fun SettingsScreen(
                     activeDialog = DialogType.Icon
                 },
             )
+            ToggleSettingItem(
+                title = stringResource(R.string.settings_show_incomplete_count_label),
+                value = stringResource(
+                    if (settings.showIncompleteCount) {
+                        R.string.settings_toggle_enabled
+                    } else {
+                        R.string.settings_toggle_disabled
+                    },
+                ),
+                checked = settings.showIncompleteCount,
+                onCheckedChange = {
+                    viewModel.updateSettings(settings.copy(showIncompleteCount = it))
+                    viewModel.save()
+                },
+            )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = stringResource(R.string.settings_section_whisper),
@@ -318,6 +334,42 @@ private fun SettingItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
+    )
+}
+
+@Composable
+private fun ToggleSettingItem(
+    title: String,
+    value: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                ),
+            )
+        },
+        supportingContent = {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) },
     )
 }
 

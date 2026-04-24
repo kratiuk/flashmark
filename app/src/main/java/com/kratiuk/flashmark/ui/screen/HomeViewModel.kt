@@ -76,11 +76,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         stopPlayback()
         repository.deleteRecording(recording)
         loadRecordings()
+        RecordingService.showIdleNotification(getApplication())
     }
 
     fun toggleCompleted(recording: Recording) {
         repository.toggleCompleted(recording)
         loadRecordings()
+        RecordingService.showIdleNotification(getApplication())
     }
 
 

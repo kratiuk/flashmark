@@ -13,6 +13,7 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.kratiuk.flashmark.R
 import com.kratiuk.flashmark.data.NotificationPrefs
 import com.kratiuk.flashmark.data.RecordingRepository
 import com.kratiuk.flashmark.transcription.TranscriptionManager
@@ -43,6 +44,7 @@ class RecordingService : Service() {
 
         private fun buildNotification(context: Context, recording: Boolean): Notification {
             val settings = NotificationPrefs(context).get()
+            val incompleteCount = RecordingRepository(context).getIncompleteCount()
 
             val openAppIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             val openAppPi = PendingIntent.getActivity(
@@ -77,7 +79,17 @@ class RecordingService : Service() {
                 NotificationPrefs.getIconRes(settings.iconKey)
             }
             val actionTitle = if (recording) settings.stopLabel else settings.recordLabel
-            val contentText = if (recording) settings.recordingText else settings.idleText
+            val contentText = if (recording) {
+                settings.recordingText
+            } else if (settings.showIncompleteCount) {
+                context.getString(
+                    R.string.notif_idle_with_incomplete_count,
+                    settings.idleText,
+                    incompleteCount,
+                )
+            } else {
+                settings.idleText
+            }
 
             return NotificationCompat.Builder(context, CHANNEL_ID)
                 .setContentTitle(settings.title)
