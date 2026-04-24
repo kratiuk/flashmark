@@ -11,10 +11,14 @@
     <string name="home_blank_line"> </string>
     <string name="home_transcription_log_title">Transcription log</string>
     <string name="home_log_empty">Log is empty.</string>
+    <string name="home_no_incomplete_title">No incomplete captures</string>
+    <string name="home_no_incomplete_subtitle">All captures are completed.</string>
     <string name="home_ok">OK</string>
     <string name="home_cancel">Cancel</string>
     <string name="home_today">Today</string>
     <string name="home_custom_date">Custom date</string>
+    <string name="home_all_incomplete">Incomplete</string>
+    <string name="home_all_incomplete_title">All incomplete</string>
     <string name="home_prev_day_cd">Previous day</string>
     <string name="home_next_day_cd">Next day</string>
     <string name="home_mark_done_cd">Mark done</string>

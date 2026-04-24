@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.IndeterminateCheckBox
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Card
@@ -89,6 +90,7 @@ fun HomeScreen(
     val playingFilePath by viewModel.playingFilePath.collectAsState()
     var infoRecording by remember { mutableStateOf<Recording?>(null) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var viewMode by remember { mutableStateOf(HomeViewMode.ByDate) }
     var showDatePicker by remember { mutableStateOf(false) }
     val darkTheme = isSystemInDarkTheme()
     val emptyIconTint = if (darkTheme) {
@@ -138,12 +140,15 @@ fun HomeScreen(
         },
     ) { innerPadding ->
         val zoneId = remember { ZoneId.systemDefault() }
-        val filtered = remember(recordings, selectedDate) {
-            recordings.filter { recording ->
-                val date = Instant.ofEpochMilli(recording.createdAt)
-                    .atZone(zoneId)
-                    .toLocalDate()
-                date == selectedDate
+        val filtered = remember(recordings, selectedDate, viewMode) {
+            when (viewMode) {
+                HomeViewMode.ByDate -> recordings.filter { recording ->
+                    val date = Instant.ofEpochMilli(recording.createdAt)
+                        .atZone(zoneId)
+                        .toLocalDate()
+                    date == selectedDate
+                }
+                HomeViewMode.AllIncomplete -> recordings.filter { !it.isCompleted }
             }
         }
         val today = LocalDate.now()
@@ -159,10 +164,18 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 DateHeader(
+                    viewMode = viewMode,
                     selectedDate = selectedDate,
                     today = today,
-                    onSelectDate = { selectedDate = it },
-                    onOpenCustom = { showDatePicker = true },
+                    onSelectAllIncomplete = { viewMode = HomeViewMode.AllIncomplete },
+                    onSelectDate = {
+                        viewMode = HomeViewMode.ByDate
+                        selectedDate = it
+                    },
+                    onOpenCustom = {
+                        viewMode = HomeViewMode.ByDate
+                        showDatePicker = true
+                    },
                     dateFormatter = dateFormatter,
                 )
                 Box(
@@ -181,7 +194,18 @@ fun HomeScreen(
                             modifier = Modifier.size(64.dp),
                             tint = emptyIconTint,
                         )
-                        if (selectedDate == today) {
+                        if (viewMode == HomeViewMode.AllIncomplete) {
+                            Text(
+                                text = stringResource(R.string.home_no_incomplete_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                text = stringResource(R.string.home_no_incomplete_subtitle),
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                            )
+                        } else if (selectedDate == today) {
                             Text(
                                 text = stringResource(R.string.home_no_captures_today_title),
                                 style = MaterialTheme.typography.titleMedium,
@@ -217,10 +241,18 @@ fun HomeScreen(
             ) {
                 item {
                     DateHeader(
+                        viewMode = viewMode,
                         selectedDate = selectedDate,
                         today = today,
-                        onSelectDate = { selectedDate = it },
-                        onOpenCustom = { showDatePicker = true },
+                        onSelectAllIncomplete = { viewMode = HomeViewMode.AllIncomplete },
+                        onSelectDate = {
+                            viewMode = HomeViewMode.ByDate
+                            selectedDate = it
+                        },
+                        onOpenCustom = {
+                            viewMode = HomeViewMode.ByDate
+                            showDatePicker = true
+                        },
                         dateFormatter = dateFormatter,
                     )
                 }
@@ -289,6 +321,7 @@ fun HomeScreen(
                 TextButton(onClick = {
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
+                        viewMode = HomeViewMode.ByDate
                         selectedDate = Instant.ofEpochMilli(millis)
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate()
@@ -395,8 +428,10 @@ private fun formatDuration(ms: Long): String {
 
 @Composable
 private fun DateHeader(
+    viewMode: HomeViewMode,
     selectedDate: LocalDate,
     today: LocalDate,
+    onSelectAllIncomplete: () -> Unit,
     onSelectDate: (LocalDate) -> Unit,
     onOpenCustom: () -> Unit,
     dateFormatter: DateTimeFormatter,
@@ -410,12 +445,27 @@ private fun DateHeader(
             val isToday = selectedDate == today
             ChipButton(
                 text = stringResource(R.string.home_today),
-                active = !isToday,
+                active = viewMode == HomeViewMode.AllIncomplete || !isToday,
                 activeColor = activeColor,
                 inactiveColor = inactiveColor,
                 inactiveText = inactiveText,
                 activeText = activeText,
-                onClick = { if (!isToday) onSelectDate(today) },
+                onClick = {
+                    if (viewMode == HomeViewMode.AllIncomplete || !isToday) {
+                        onSelectDate(today)
+                    }
+                },
+            )
+            val isAllIncomplete = viewMode == HomeViewMode.AllIncomplete
+            IconChipButton(
+                icon = Icons.Outlined.IndeterminateCheckBox,
+                contentDescription = stringResource(R.string.home_all_incomplete),
+                active = !isAllIncomplete,
+                activeColor = activeColor,
+                inactiveColor = inactiveColor,
+                inactiveText = inactiveText,
+                activeText = activeText,
+                onClick = { if (!isAllIncomplete) onSelectAllIncomplete() },
             )
             val prev = selectedDate.minusDays(1)
             IconChipButton(
@@ -442,7 +492,7 @@ private fun DateHeader(
             )
             ChipButton(
                 text = stringResource(R.string.home_custom_date),
-                active = true,
+                active = viewMode == HomeViewMode.ByDate,
                 activeColor = activeColor,
                 inactiveColor = inactiveColor,
                 inactiveText = inactiveText,
@@ -451,10 +501,19 @@ private fun DateHeader(
             )
         }
         Text(
-            text = selectedDate.format(dateFormatter),
+            text = if (viewMode == HomeViewMode.AllIncomplete) {
+                stringResource(R.string.home_all_incomplete_title)
+            } else {
+                selectedDate.format(dateFormatter)
+            },
             style = MaterialTheme.typography.titleMedium,
         )
     }
+}
+
+private enum class HomeViewMode {
+    ByDate,
+    AllIncomplete,
 }
 
 @Composable
